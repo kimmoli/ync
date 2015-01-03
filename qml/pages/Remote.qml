@@ -8,6 +8,16 @@ import Sailfish.Silica 1.0
 Page
 {
     id: page
+    RemorsePopup { id: remorse }
+
+    function powerStandby()
+    {
+        remorse.execute("Shutting down", function()
+            {
+            ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
+                                "<Main_Zone><Power_Control><Power>Standby</Power></Power_Control></Main_Zone></YAMAHA_AV>")
+            } )
+    }
 
     SilicaFlickable
     {
@@ -55,7 +65,6 @@ Page
                         anchors.fill: parent
                         onClicked: pageStack.push(Qt.resolvedUrl("AboutDevice.qml"))
                     }
-
                 }
 
                 Label
@@ -89,6 +98,12 @@ Page
                 text: "Toggle mute"
                 onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
                     "<Main_Zone><Volume><Mute>On/Off</Mute></Volume></Main_Zone></YAMAHA_AV>")
+            }
+            Button
+            {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Standby"
+                onClicked: powerStandby()
             }
 
         }
