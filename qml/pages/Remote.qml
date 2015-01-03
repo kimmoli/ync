@@ -47,7 +47,9 @@ Page
                 {
                     id: deviceLogo
                     anchors.verticalCenter: parent.verticalCenter
-                    source: "http://192.168.10.53:8080/BCO_device_lrg_icon.png"
+                    source: ync.iconUrl
+                    width: 120
+                    height: 120
                     MouseArea
                     {
                         anchors.fill: parent
@@ -88,6 +90,7 @@ Page
                 onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
                     "<Main_Zone><Volume><Mute>On/Off</Mute></Volume></Main_Zone></YAMAHA_AV>")
             }
+
         }
     }
 

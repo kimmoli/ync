@@ -10,15 +10,17 @@
 #include <QDebug>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QXmlStreamReader>
 #include <QVariantMap>
 #include <QStringList>
+
+#include "networkobserver.h"
 
 class YNC : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString version READ readVersion NOTIFY versionChanged())
     Q_PROPERTY(QVariantMap deviceInfo READ readDeviceInfo NOTIFY deviceInfoChanged())
+    Q_PROPERTY(QString iconUrl READ readIconUrl NOTIFY iconUrlChanged())
 
 public:
     explicit YNC(QObject *parent = 0);
@@ -26,22 +28,31 @@ public:
 
     QString readVersion();
     QVariantMap readDeviceInfo() { return m_deviceInfo; }
+    QString readIconUrl() { return m_iconUrl; }
 
     Q_INVOKABLE void postThis(QString data);
 
+    Q_INVOKABLE void startDiscovery();
+
 public slots:
     void postFinish(QNetworkReply *reply);
-    void getDeviceDescFinish(QNetworkReply *reply);
+    void deviceDiscovered(const QString &result);
+    void deviceDiscoveryTimeout();
 
 signals:
     void versionChanged();
     void deviceInfoChanged();
+    void iconUrlChanged();
 
 private:
-    void getDeviceDescription();
+    void getDeviceInfo(QString url);
 
-    QNetworkAccessManager * m_mgr;
+    //QNetworkAccessManager * m_mgr;
     QVariantMap m_deviceInfo;
+    NetworkObserver * m_networkObserver;
+
+    QString m_baseUrl;
+    QString m_iconUrl;
 
 };
 

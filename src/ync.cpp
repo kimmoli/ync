@@ -3,6 +3,8 @@
 */
 
 #include "ync.h"
+#include <QXmlQuery>
+#include <QXmlResultItems>
 
 YNC::YNC(QObject *parent) :
     QObject(parent)
@@ -12,9 +14,9 @@ YNC::YNC(QObject *parent) :
     m_deviceInfo = QVariantMap();
     m_deviceInfo.insert("friendlyName", "Not connected");
 
-    emit deviceInfoChanged();
+    m_baseUrl = QString();
 
-    getDeviceDescription();
+    emit deviceInfoChanged();
 }
 
 YNC::~YNC()
@@ -26,19 +28,16 @@ QString YNC::readVersion()
     return APPVERSION;
 }
 
-void YNC::getDeviceDescription()
+void YNC::getDeviceInfo(QString url)
 {
-    m_mgr = new QNetworkAccessManager(this);
-    connect(m_mgr, SIGNAL(finished(QNetworkReply*)), this, SLOT(getDeviceDescFinish(QNetworkReply*)));
-    connect(m_mgr, SIGNAL(finished(QNetworkReply*)), m_mgr, SLOT(deleteLater()));
+    QNetworkAccessManager * _mgr = new QNetworkAccessManager(this);
 
-    m_mgr->get(QNetworkRequest(QUrl("http://192.168.10.53:8080/MediaRenderer/desc.xml")));
+    QXmlQuery query;
+    query.setNetworkAccessManager(_mgr);
+    query.setFocus(QUrl(url));
 
-    qDebug() << "Fetching device description";
-}
+    QString queryTemplate("declare default element namespace \"urn:schemas-upnp-org:device-1-0\"; /root/device/%1/string()");
 
-void YNC::getDeviceDescFinish(QNetworkReply *reply)
-{
     QStringList lookFor;
     lookFor << "friendlyName";
     lookFor << "manufacturer";
@@ -49,53 +48,30 @@ void YNC::getDeviceDescFinish(QNetworkReply *reply)
 
     m_deviceInfo.clear();
 
-    if(reply->error() == QNetworkReply::NoError)
+    foreach (const QString &looking, lookFor)
     {
-        QString strReply = (QString)reply->readAll();
-
-        QXmlStreamReader xml(strReply);
-        while(!xml.atEnd() && !xml.hasError())
-        {
-            QXmlStreamReader::TokenType token = xml.readNext();
-
-            if(token == QXmlStreamReader::StartDocument)
-                continue;
-
-            if(token == QXmlStreamReader::StartElement)
-            {
-                QString thisName = xml.name().toString();
-                if(lookFor.contains(thisName, Qt::CaseInsensitive))
-                {
-                    xml.readNext();
-                    if(xml.tokenType() != QXmlStreamReader::Characters)
-                    {
-                        qDebug() << "no characters?";
-                        m_deviceInfo.insert(thisName, "N/A");
-                        continue;
-                    }
-
-                    qDebug() << thisName << xml.text().toString();
-                    m_deviceInfo.insert(thisName, xml.text().toString());
-                }
-            }
-        }
-
-        if(xml.hasError())
-        {
-            qDebug() << "XML error:" << xml.errorString();
-        }
-
-        qDebug() << "Finished parsing XML";
-
-        xml.clear();
-
-        emit deviceInfoChanged();
-    }
-    else
-    {
-        qDebug() << "Network error:" << reply->errorString();
+        query.setQuery(queryTemplate.arg(looking));
+        QString value;
+        query.evaluateTo(&value);
+        value = value.trimmed();
+        m_deviceInfo.insert(looking, value);
     }
 
+    qDebug() << m_deviceInfo;
+
+    emit deviceInfoChanged();
+
+    queryTemplate = "declare default element namespace \"urn:schemas-upnp-org:device-1-0\"; /root/device/iconList/icon/%1/string()";
+    query.setQuery(queryTemplate.arg("url"));
+    QStringList iconUrls;
+    query.evaluateTo(&iconUrls);
+    qDebug() << iconUrls;
+
+    // just take last one
+    m_iconUrl = QString("http://%1:%2%3").arg(QUrl(url).host()).arg(QUrl(url).port(80)).arg(iconUrls.last());
+    qDebug() << m_iconUrl;
+
+    emit iconUrlChanged();
 }
 
 
@@ -104,17 +80,17 @@ void YNC::getDeviceDescFinish(QNetworkReply *reply)
  */
 void YNC::postThis(QString data)
 {
-    m_mgr = new QNetworkAccessManager(this);
-    connect(m_mgr, SIGNAL(finished(QNetworkReply*)), this, SLOT(postFinish(QNetworkReply*)));
-    connect(m_mgr, SIGNAL(finished(QNetworkReply*)), m_mgr, SLOT(deleteLater()));
+    QNetworkAccessManager * _mgr = new QNetworkAccessManager(this);
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), this, SLOT(postFinish(QNetworkReply*)));
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), _mgr, SLOT(deleteLater()));
 
-    QUrl url("http://192.168.10.53/YamahaRemoteControl/ctrl");
+    QUrl url(m_baseUrl + "/YamahaRemoteControl/ctrl");
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "text/xml");
 
     qDebug() << "posting..." << url << data;
 
-    m_mgr->post(request, data.toLatin1());
+    _mgr->post(request, data.toLatin1());
 }
 
 void YNC::postFinish(QNetworkReply *reply)
@@ -132,4 +108,32 @@ void YNC::postFinish(QNetworkReply *reply)
     }
 }
 
+void YNC::startDiscovery()
+{
+    m_networkObserver = new NetworkObserver(this);
+
+    qDebug() << "starting search...";
+
+    connect(m_networkObserver, SIGNAL(discovered(const QString&)), this, SLOT(deviceDiscovered(const QString&)));
+    connect(m_networkObserver, SIGNAL(timeout()), this, SLOT(deviceDiscoveryTimeout()));
+    connect(m_networkObserver, SIGNAL(timeout()), m_networkObserver, SLOT(deleteLater()));
+
+    m_networkObserver->startSearch();
+}
+
+void YNC::deviceDiscovered(const QString &result)
+{
+    qDebug() << result;
+
+    m_baseUrl = QString("http://%1").arg(QUrl(result).host());
+
+    qDebug() << m_baseUrl;
+
+    getDeviceInfo(result);
+}
+
+void YNC::deviceDiscoveryTimeout()
+{
+    qDebug() << "timeout";
+}
 

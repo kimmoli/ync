@@ -5,6 +5,7 @@
 TARGET = harbour-ync
 
 CONFIG += sailfishapp
+QT += xml xmlpatterns
 
 DEFINES += "APPVERSION=\\\"$${SPECVERSION}\\\""
 
@@ -12,9 +13,11 @@ message($${DEFINES})
 
 SOURCES += \
 	src/ync.cpp \
-    src/main.cpp
+    src/main.cpp \
+    src/networkobserver.cpp
 	
-HEADERS += src/ync.h
+HEADERS += src/ync.h \
+    src/networkobserver.h
 
 OTHER_FILES += \
     qml/cover/CoverPage.qml \

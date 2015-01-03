@@ -35,7 +35,7 @@ Page
             }
             Image
             {
-                source: "http://192.168.10.53:8080/BCO_device_lrg_icon.png"
+                source: ync.iconUrl
             }
 
             Label

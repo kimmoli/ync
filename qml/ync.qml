@@ -29,6 +29,7 @@ ApplicationWindow
     YNC
     {
         id: ync
+        Component.onCompleted: ync.startDiscovery()
     }
 }
 
