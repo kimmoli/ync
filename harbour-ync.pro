@@ -23,5 +23,6 @@ OTHER_FILES += \
     rpm/harbour-ync.spec \
 	harbour-ync.png \
     harbour-ync.desktop \
-    qml/ync.qml
+    qml/ync.qml \
+    qml/pages/AboutDevice.qml
 

@@ -21,7 +21,7 @@ Page
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"),
                                           { "version": ync.version,
                                               "year": "2014",
-                                              "name": "Yamaha Network Controller",
+                                              "name": "YNC",
                                               "imagelocation": "/usr/share/icons/hicolor/86x86/apps/harbour-ync.png"} )
             }
         }
@@ -48,30 +48,45 @@ Page
                     id: deviceLogo
                     anchors.verticalCenter: parent.verticalCenter
                     source: "http://192.168.10.53:8080/BCO_device_lrg_icon.png"
+                    MouseArea
+                    {
+                        anchors.fill: parent
+                        onClicked: pageStack.push(Qt.resolvedUrl("AboutDevice.qml"))
+                    }
+
                 }
 
                 Label
                 {
                     id: deviceLabel
                     anchors.verticalCenter: parent.verticalCenter
-                    text: ync.deviceName
+                    text: ync.deviceInfo["friendlyName"]
                     color: Theme.primaryColor
-                    font.pixelSize: Theme.fontSizeMedium
+                    font.pixelSize: Theme.fontSizeLarge
                 }
+
             }
             Button
             {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Volume up"
                 onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
-                    "<Main_Zone><Volume><Lvl><Val>Up 1 dB</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>")
+                    "<Main_Zone><Volume><Lvl><Val>Up</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>")
+
             }
             Button
             {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Volume down"
                 onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
-                    "<Main_Zone><Volume><Lvl><Val>Down 1 dB</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>")
+                    "<Main_Zone><Volume><Lvl><Val>Down</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>")
+            }
+            Button
+            {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Toggle mute"
+                onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
+                    "<Main_Zone><Volume><Mute>On/Off</Mute></Volume></Main_Zone></YAMAHA_AV>")
             }
         }
     }

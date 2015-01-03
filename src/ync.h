@@ -11,19 +11,21 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QXmlStreamReader>
+#include <QVariantMap>
+#include <QStringList>
 
 class YNC : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString version READ readVersion NOTIFY versionChanged())
-    Q_PROPERTY(QString deviceName READ readDeviceName NOTIFY deviceNameChanged())
+    Q_PROPERTY(QVariantMap deviceInfo READ readDeviceInfo NOTIFY deviceInfoChanged())
 
 public:
     explicit YNC(QObject *parent = 0);
     ~YNC();
 
     QString readVersion();
-    QString readDeviceName() { return m_deviceName; }
+    QVariantMap readDeviceInfo() { return m_deviceInfo; }
 
     Q_INVOKABLE void postThis(QString data);
 
@@ -33,13 +35,13 @@ public slots:
 
 signals:
     void versionChanged();
-    void deviceNameChanged();
+    void deviceInfoChanged();
 
 private:
     void getDeviceDescription();
 
     QNetworkAccessManager * m_mgr;
-    QString m_deviceName;
+    QVariantMap m_deviceInfo;
 
 };
 

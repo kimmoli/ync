@@ -9,15 +9,16 @@ YNC::YNC(QObject *parent) :
 {
     emit versionChanged();
 
-    m_deviceName = QString("Not connected.");
-    emit deviceNameChanged();
+    m_deviceInfo = QVariantMap();
+    m_deviceInfo.insert("friendlyName", "Not connected");
+
+    emit deviceInfoChanged();
 
     getDeviceDescription();
 }
 
 YNC::~YNC()
 {
-    delete m_mgr;
 }
 
 QString YNC::readVersion()
@@ -38,12 +39,19 @@ void YNC::getDeviceDescription()
 
 void YNC::getDeviceDescFinish(QNetworkReply *reply)
 {
-    qDebug() << "Finished";
+    QStringList lookFor;
+    lookFor << "friendlyName";
+    lookFor << "manufacturer";
+    lookFor << "manufacturerURL";
+    lookFor << "modelName";
+    lookFor << "modelDescription";
+    lookFor << "serialNumber";
+
+    m_deviceInfo.clear();
 
     if(reply->error() == QNetworkReply::NoError)
     {
         QString strReply = (QString)reply->readAll();
-//        qDebug() << strReply;
 
         QXmlStreamReader xml(strReply);
         while(!xml.atEnd() && !xml.hasError())
@@ -55,23 +63,19 @@ void YNC::getDeviceDescFinish(QNetworkReply *reply)
 
             if(token == QXmlStreamReader::StartElement)
             {
-//                if(xml.name() == "device")
-//                    continue;
-
-                qDebug() << xml.name();
-
-                if(xml.name() == "friendlyName")
+                QString thisName = xml.name().toString();
+                if(lookFor.contains(thisName, Qt::CaseInsensitive))
                 {
                     xml.readNext();
                     if(xml.tokenType() != QXmlStreamReader::Characters)
                     {
                         qDebug() << "no characters?";
+                        m_deviceInfo.insert(thisName, "N/A");
                         continue;
                     }
 
-                    qDebug() << "friendlyName" << xml.text().toString();
-                    m_deviceName = xml.text().toString();
-                    emit deviceNameChanged();
+                    qDebug() << thisName << xml.text().toString();
+                    m_deviceInfo.insert(thisName, xml.text().toString());
                 }
             }
         }
@@ -84,6 +88,8 @@ void YNC::getDeviceDescFinish(QNetworkReply *reply)
         qDebug() << "Finished parsing XML";
 
         xml.clear();
+
+        emit deviceInfoChanged();
     }
     else
     {
