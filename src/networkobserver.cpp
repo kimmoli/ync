@@ -15,7 +15,6 @@
 #include <netinet/ip.h>
 #endif
 
-#include <QDebug>
 #include <QTimer>
 
 #define SSDP_BROADCAST_ADDRESS "239.255.255.250"
@@ -42,7 +41,8 @@ NetworkObserver::~NetworkObserver()
 
 void NetworkObserver::startSearch()
 {
-    if (timeoutTimer->isActive()) {
+    if (timeoutTimer->isActive())
+    {
         timeoutTimer->stop();
     }
     discoveredDevices.clear();
@@ -57,17 +57,20 @@ void NetworkObserver::startSearch()
         "\r\n";
     const int mSearchMessageLength = sizeof(mSearchMessage) / sizeof(mSearchMessage[0]);
 
-    foreach (QNetworkInterface iface, QNetworkInterface::allInterfaces()) {
-        foreach (QNetworkAddressEntry addr, iface.addressEntries()) {
+    foreach (QNetworkInterface iface, QNetworkInterface::allInterfaces())
+    {
+        foreach (QNetworkAddressEntry addr, iface.addressEntries())
+        {
             QUdpSocket *socket = new QUdpSocket(this);
             QObject::connect(socket, SIGNAL(readyRead()), SLOT(onUdpSocketReadyRead()));
             QObject::connect(this, SIGNAL(timeout()), socket, SLOT(deleteLater()));
-            if (addr.ip().protocol() == QUdpSocket::IPv4Protocol && socket->bind(addr.ip(), SSDPPortNumber + 1 ,QUdpSocket::ShareAddress)) {
-                //qDebug() << addr.ip().toString();
+            if (addr.ip().protocol() == QUdpSocket::IPv4Protocol && socket->bind(addr.ip(), SSDPPortNumber + 1 ,QUdpSocket::ShareAddress))
+            {
                 socket->joinMulticastGroup(QHostAddress(SSDPBroadCastAddress));
                 socket->writeDatagram( mSearchMessage, mSearchMessageLength, QHostAddress(SSDPBroadCastAddress), SSDPPortNumber );
             }
-            else {
+            else
+            {
                 socket->deleteLater();
             }
         }
@@ -78,7 +81,8 @@ void NetworkObserver::startSearch()
 
 void NetworkObserver::stopSearch()
 {
-    if (timeoutTimer->isActive()) {
+    if (timeoutTimer->isActive())
+    {
         timeoutTimer->stop();
     }
     Q_EMIT timeout();
@@ -98,9 +102,8 @@ void NetworkObserver::handleMessage(const QByteArray &message)
     // "HTTP/1.1 200 OK"
     // "NOTIFY * HTTP/1.1"
     const QString firstLine = lines.first();
-    if( ! firstLine.contains("HTTP")
-        || (! firstLine.contains("NOTIFY")
-            && ! firstLine.contains("200 OK")) )
+
+    if( ! firstLine.contains("HTTP") || (! firstLine.contains("NOTIFY") && ! firstLine.contains("200 OK")) )
         return;
 
     // read all lines and try to find the location field
@@ -120,7 +123,8 @@ void NetworkObserver::handleMessage(const QByteArray &message)
 void NetworkObserver::onUdpSocketReadyRead()
 {
     QUdpSocket *socket = qobject_cast<QUdpSocket*>(sender());
-    if (socket) {
+    if (socket)
+    {
         const int pendingDatagramSize = socket->pendingDatagramSize();
 
         QByteArray message(pendingDatagramSize, 0);
@@ -134,10 +138,12 @@ void NetworkObserver::onUdpSocketReadyRead()
 
 void NetworkObserver::checkDeviceInfo(const QString &server)
 {
-    if (discoveredDevices.contains(server)) {
+    if (discoveredDevices.contains(server))
+    {
         return;
     }
-    else {
+    else
+    {
         discoveredDevices.append(server);
     }
 

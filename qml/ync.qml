@@ -22,7 +22,6 @@ ApplicationWindow
 
     function coverActionLeft()
     {
-        console.log("Left cover action")
         ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
                             "<Main_Zone><Volume><Mute>On/Off</Mute></Volume></Main_Zone></YAMAHA_AV>")
     }
@@ -47,9 +46,6 @@ ApplicationWindow
             for (var i=0 ; i<ync.deviceInputs.length ; i++)
                 inputNames.append( { "inputName": ync.deviceInputs[i]["inputName"] } )
         }
-
-        onCurrentInputChanged:
-            console.log("input changed to " + ync.currentInput)
     }
 
     onPowerOnChanged:

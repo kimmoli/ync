@@ -65,12 +65,10 @@ void YNC::getDeviceInfo(QString url)
     query.setQuery(queryTemplate.arg("url"));
     QStringList iconUrls;
     query.evaluateTo(&iconUrls);
-    qDebug() << iconUrls;
 
     // just take last one
     m_deviceInfo.insert("IconUrl", QString("http://%1:%2%3").arg(QUrl(url).host()).arg(QUrl(url).port(80)).arg(iconUrls.last()));
 
-    qDebug() << m_deviceInfo;
     emit deviceInfoChanged();
 
     getDeviceInputs();
@@ -90,19 +88,17 @@ void YNC::postThis(QString data)
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "text/xml");
 
-    qDebug() << "posting..." << url << data;
+//    qDebug() << "posting..." << url << data;
 
     _mgr->post(request, data.toLatin1());
 }
 
 void YNC::postFinish(QNetworkReply *reply)
 {
-    qDebug() << "Finished";
-
     if(reply->error() == QNetworkReply::NoError)
     {
         QString strReply = (QString)reply->readAll();
-        qDebug() << strReply;
+//        qDebug() << strReply;
     }
     else
     {
@@ -126,8 +122,6 @@ void YNC::getDeviceStatus()
     QUrl url(m_baseUrl + "/YamahaRemoteControl/ctrl");
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "text/xml");
-
-    qDebug() << "posting..." << url << data;
 
     _mgr->post(request, data.toLatin1());
 }
@@ -169,19 +163,16 @@ void YNC::getDeviceStatusFinish(QNetworkReply *reply)
         QString tmp;
         query.evaluateTo(&tmp);
 
-        qDebug() << looking << tmp.trimmed();
         m_deviceStatus.insert(looking, tmp.trimmed());
     }
 
     for (int i=0 ; i<m_deviceInputs.count() ; i++)
     {
         QVariantMap m = m_deviceInputs.at(i).toMap();
-        qDebug() << m_deviceStatus.value("Input/Input_Sel_Item_Info/Param") << m.value("inputName").toString();
 
         if (m_deviceStatus.value("Input/Input_Sel_Item_Info/Param") == m.value("inputName").toString())
         {
             m_currentInput = i;
-            qDebug() << "input changed to" << m_currentInput;
             emit currentInputChanged();
             break;
         }
@@ -205,8 +196,6 @@ void YNC::getDeviceInputs()
     QUrl url(m_baseUrl + "/YamahaRemoteControl/ctrl");
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "text/xml");
-
-    qDebug() << "posting..." << url << data;
 
     _mgr->post(request, data.toLatin1());
 
@@ -266,7 +255,7 @@ void YNC::startDiscovery()
 {
     m_networkObserver = new NetworkObserver(this);
 
-    qDebug() << "starting search...";
+    qDebug() << "starting discovery...";
 
     connect(m_networkObserver, SIGNAL(discovered(const QString&)), this, SLOT(deviceDiscovered(const QString&)));
     connect(m_networkObserver, SIGNAL(timeout()), this, SLOT(deviceDiscoveryTimeout()));
@@ -277,23 +266,23 @@ void YNC::startDiscovery()
 
 void YNC::deviceDiscovered(const QString &result)
 {
-    qDebug() << result;
+    qDebug() << "found device, description:" << result;
 
     m_baseUrl = QString("http://%1").arg(QUrl(result).host());
-
-    qDebug() << m_baseUrl;
 
     getDeviceInfo(result);
 }
 
 void YNC::deviceDiscoveryTimeout()
 {
-    qDebug() << "timeout";
+    qDebug() << "discovery timeout";
 
     if (m_deviceInfo.value("friendlyName") == "Searching...")
     {
         m_deviceInfo.clear();
         m_deviceInfo.insert("friendlyName", "Nothing found.");
+
+        emit deviceInfoChanged();
     }
 }
 
