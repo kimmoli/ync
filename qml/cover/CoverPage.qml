@@ -23,7 +23,7 @@ CoverBackground
         {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: ync.deviceInputs[ync.currentInput]["inputTitle"] + "(" + ync.deviceInputs[ync.currentInput]["inputName"] + ")"
+            text: (ync.deviceInputs[ync.currentInput]["inputTitle"] + "          ").slice(0,10) + "(" + ync.deviceInputs[ync.currentInput]["inputName"] + ")"
             font.bold: true
         }
         Label

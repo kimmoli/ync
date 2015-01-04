@@ -216,7 +216,7 @@ Page
                         model: ync.deviceInputs
                         MenuItem
                         {
-                            text: ync.deviceInputs[index]["inputTitle"] + "(" + ync.deviceInputs[index]["inputName"] + ")"
+                            text: (ync.deviceInputs[index]["inputTitle"] + "          ").slice(0,10) + "(" + ync.deviceInputs[index]["inputName"] + ")"
                             onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\"><Main_Zone><Input><Input_Sel>" + ync.deviceInputs[index]["inputName"] + "</Input_Sel></Input></Main_Zone></YAMAHA_AV>")
                         }
                     }

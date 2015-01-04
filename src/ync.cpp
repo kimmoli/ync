@@ -238,8 +238,8 @@ void YNC::getDeviceInputsFinish(QNetworkReply *reply)
     for (int i=0 ; i<tmpParam.count() ; i++)
     {
         map.clear();
-        map.insert("inputName", tmpParam.at(i));
-        map.insert("inputTitle", tmpTitle.at(i));
+        map.insert("inputName", tmpParam.at(i).trimmed());
+        map.insert("inputTitle", tmpTitle.at(i).trimmed());
         list.append(map);
     }
 
