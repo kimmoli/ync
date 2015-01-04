@@ -10,7 +10,7 @@ ApplicationWindow
 {
     id: appWin
 
-    property string coverActionLeftIcon: "image://theme/icon-cover-mute"
+    property string coverActionLeftIcon: "image://theme/icon-m-speaker-mute"
     property string coverActionRightIcon: "image://theme/icon-cover-play"
 
     property real volumeValue: -350

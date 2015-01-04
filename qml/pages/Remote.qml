@@ -87,12 +87,14 @@ Page
                     ProgressCircle
                     {
                         id: progressCircle
-                        anchors.fill: parent
+                        anchors.centerIn: parent
+                        width: 64
+                        height: 64
                         visible: deviceLabel.text === "Searching..."
 
                         Timer
                         {
-                            interval: 32
+                            interval: 25
                             repeat: true
                             onTriggered: progressCircle.value = (progressCircle.value + 0.005) % 1.0
                             running: parent.visible
@@ -125,6 +127,7 @@ Page
                     text: (ync.deviceStatus["Volume/Lvl/Val"]/10).toFixed(1) + " dB"
                     font.pixelSize: Theme.fontSizeExtraLarge
                     font.bold: true
+                    opacity: powerOn ? 1.0 : 0.4
                     horizontalAlignment: Text.AlignHCenter
                 }
                 Column
@@ -133,7 +136,8 @@ Page
                     IconButton
                     {
                         enabled: powerOn
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.paddingLarge
                         icon.source: "image://theme/icon-m-up"
                         onClicked: ync.postThis(volUp)
                         onPressAndHold: volUpTimer.start()
@@ -151,7 +155,8 @@ Page
                     IconButton
                     {
                         enabled: powerOn
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.paddingLarge
                         icon.source: "image://theme/icon-m-down"
                         onClicked: ync.postThis(volDown)
                         onPressAndHold: volDownTimer.start()
