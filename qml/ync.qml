@@ -16,6 +16,7 @@ ApplicationWindow
     property real volumeValue: -350
     property bool powerOn: false
     property int currentInput: 0
+    property int tunerRepeater: 5
 
     initialPage: Qt.resolvedUrl("pages/Remote.qml")
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
@@ -46,6 +47,21 @@ ApplicationWindow
             for (var i=0 ; i<ync.deviceInputs.length ; i++)
                 inputNames.append( { "inputName": ync.deviceInputs[i]["inputName"] } )
         }
+
+        onTunerStatusChanged:
+        {
+            if ((ync.tunerStatus["Tuning/Freq/Current/Val"]).slice(0,4) === "Auto")
+            {
+                checkTunerStatusTimer.start()
+                tunerRepeater = 5
+            }
+            else
+            {
+                tunerRepeater = tunerRepeater - 1
+                if (tunerRepeater>0)
+                    checkTunerStatusTimer.start()
+            }
+        }
     }
 
     onPowerOnChanged:
@@ -54,6 +70,7 @@ ApplicationWindow
             checkDeviceStatusTimer.stop()
     }
 
+
     Timer
     {
         id: checkDeviceStatusTimer
@@ -61,6 +78,15 @@ ApplicationWindow
         repeat: true
         running: false
         onTriggered: ync.getDeviceStatus()
+    }
+
+    Timer
+    {
+        id: checkTunerStatusTimer
+        interval: 1000
+        repeat: false
+        running: false
+        onTriggered: ync.getTunerStatus()
     }
 
     ListModel

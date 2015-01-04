@@ -178,6 +178,59 @@ Page
                 }
             }
 
+            Row
+            {
+                visible: ync.deviceInputs[ync.currentInput]["inputName"] === "TUNER"
+                width: parent.width - Theme.paddingLarge
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 0
+
+                Column
+                {
+                    width: parent.width / 2
+
+                    Label
+                    {
+                        width: parent.width
+                        text: ((ync.tunerStatus["Tuning/Freq/Current/Val"]).slice(0,4) === "Auto") ? "seeking" :
+                            (ync.tunerStatus["Tuning/Freq/Current/Val"]/100).toFixed(2) + " " + ync.tunerStatus["Tuning/Freq/Current/Unit"]
+
+                        font.pixelSize: Theme.fontSizeExtraLarge
+                        font.bold: true
+                        opacity: powerOn ? 1.0 : 0.4
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    Label
+                    {
+                        width: parent.width
+                        text: ync.tunerStatus["Meta_Info/Program_Service"]
+                        font.pixelSize: Theme.fontSizeMedium
+                        opacity: powerOn ? 1.0 : 0.4
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+                Column
+                {
+                    width: parent.width / 2
+                    IconButton
+                    {
+                        enabled: powerOn
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.paddingLarge
+                        icon.source: "image://theme/icon-m-up"
+                        onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\"><Tuner><Play_Control><Tuning><Freq><FM><Val>Auto Up</Val></FM></Freq></Tuning></Play_Control></Tuner></YAMAHA_AV>")
+                    }
+                    IconButton
+                    {
+                        enabled: powerOn
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.paddingLarge
+                        icon.source: "image://theme/icon-m-down"
+                        onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\"><Tuner><Play_Control><Tuning><Freq><FM><Val>Auto Down</Val></FM></Freq></Tuning></Play_Control></Tuner></YAMAHA_AV>")
+                    }
+                }
+            }
+
             IconTextSwitch
             {
                 text: "Mute"

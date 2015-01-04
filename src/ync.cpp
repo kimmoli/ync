@@ -178,9 +178,69 @@ void YNC::getDeviceStatusFinish(QNetworkReply *reply)
         }
     }
 
-
     emit deviceStatusChanged();
+
+    getTunerStatus();
 }
+
+void YNC::getTunerStatus()
+{
+    if (m_baseUrl.isEmpty())
+        return;
+
+    QString data("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"GET\"><Tuner><Play_Info>GetParam</Play_Info></Tuner></YAMAHA_AV>");
+
+    QNetworkAccessManager * _mgr = new QNetworkAccessManager(this);
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), this, SLOT(getTunerStatusFinish(QNetworkReply*)));
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), _mgr, SLOT(deleteLater()));
+
+    QUrl url(m_baseUrl + "/YamahaRemoteControl/ctrl");
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "text/xml");
+
+    _mgr->post(request, data.toLatin1());
+}
+
+void YNC::getTunerStatusFinish(QNetworkReply *reply)
+{
+    QString strReply;
+
+    if(reply->error() == QNetworkReply::NoError)
+    {
+        strReply = (QString)reply->readAll();
+    }
+    else
+    {
+        qDebug() << "Network error:" << reply->errorString();
+        return;
+    }
+
+    QBuffer device;
+    device.setData(strReply.toUtf8());
+    device.open(QIODevice::ReadOnly);
+
+    QXmlQuery query;
+    query.bindVariable("reply", &device);
+
+    m_tunerStatus.clear();
+
+    QStringList lookFor;
+    lookFor << "Tuning/Freq/Current/Val";
+    lookFor << "Tuning/Freq/Current/Unit";
+    lookFor << "Meta_Info/Program_Service";
+
+    foreach (const QString looking, lookFor)
+    {
+        query.setQuery(QString("doc($reply)/YAMAHA_AV/Tuner/Play_Info/%1/string()").arg(looking));
+        QString tmp;
+        query.evaluateTo(&tmp);
+
+        m_tunerStatus.insert(looking, tmp.trimmed());
+    }
+
+    emit tunerStatusChanged();
+}
+
 
 void YNC::getDeviceInputs()
 {
