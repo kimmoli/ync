@@ -10,6 +10,15 @@ Page
     id: page
     RemorsePopup { id: remorse }
 
+    property string volUp   : "<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
+                              "<Main_Zone><Volume><Lvl><Val>Up</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>"
+    property string volDown : "<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
+                              "<Main_Zone><Volume><Lvl><Val>Down</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>"
+    property string volUpFast   : "<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
+                              "<Main_Zone><Volume><Lvl><Val>Up 1 dB</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>"
+    property string volDownFast : "<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
+                              "<Main_Zone><Volume><Lvl><Val>Down 1 dB</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>"
+
     function powerStandby(text)
     {
         if (text === "Standby")
@@ -24,7 +33,9 @@ Page
         {
             ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
                                 "<Main_Zone><Power_Control><Power>On</Power></Power_Control></Main_Zone></YAMAHA_AV>")
+            checkDeviceStatusTimer.start()
         }
+
     }
 
     SilicaFlickable
@@ -100,38 +111,79 @@ Page
                 }
 
             }
-            Label
+
+            Row
             {
+                width: parent.width - Theme.paddingLarge
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Volume " + ync.deviceStatus["Volume/Lvl/Val"]
+                spacing: 0
+
+                Label
+                {
+                    width: parent.width / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: (ync.deviceStatus["Volume/Lvl/Val"]/10).toFixed(1) + " dB"
+                    font.pixelSize: Theme.fontSizeExtraLarge
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                Column
+                {
+                    width: parent.width / 2
+                    IconButton
+                    {
+                        enabled: powerOn
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        icon.source: "image://theme/icon-m-up"
+                        onClicked: ync.postThis(volUp)
+                        onPressAndHold: volUpTimer.start()
+                        onReleased: volUpTimer.stop()
+                        Timer
+                        {
+                            id: volUpTimer
+                            interval: 200
+                            repeat: true
+                            running: false
+                            onTriggered: ync.postThis(volUpFast)
+                        }
+
+                    }
+                    IconButton
+                    {
+                        enabled: powerOn
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        icon.source: "image://theme/icon-m-down"
+                        onClicked: ync.postThis(volDown)
+                        onPressAndHold: volDownTimer.start()
+                        onReleased: volDownTimer.stop()
+                        Timer
+                        {
+                            id: volDownTimer
+                            interval: 200
+                            repeat: true
+                            running: false
+                            onTriggered: ync.postThis(volDownFast)
+                        }
+                    }
+                }
             }
 
-            Button
+            IconTextSwitch
             {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Volume up"
-                onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
-                    "<Main_Zone><Volume><Lvl><Val>Up</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>")
-
-            }
-            Button
-            {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Volume down"
-                onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
-                    "<Main_Zone><Volume><Lvl><Val>Down</Val><Exp></Exp><Unit></Unit></Lvl></Volume></Main_Zone></YAMAHA_AV>")
-            }
-            Button
-            {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Toggle mute"
+                text: "Mute"
+                icon.source: "image://theme/icon-m-speaker-mute"
+                automaticCheck: false
+                width: parent.width - Theme.paddingLarge
+                enabled: powerOn
+                checked: ync.deviceStatus["Volume/Mute"] === "On"
                 onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
                     "<Main_Zone><Volume><Mute>On/Off</Mute></Volume></Main_Zone></YAMAHA_AV>")
             }
+
             Button
             {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: ync.deviceStatus["Power_Control/Power"] === "Standby" ? "On" : "Standby"
+                text: powerOn ? "Standby" : "On"
                 onClicked: powerStandby(text)
             }
 

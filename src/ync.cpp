@@ -159,6 +159,7 @@ void YNC::getDeviceStatusFinish(QNetworkReply *reply)
     QStringList lookFor;
     lookFor << "Power_Control/Power";
     lookFor << "Volume/Lvl/Val";
+    lookFor << "Volume/Mute";
 
     foreach (const QString looking, lookFor)
     {
