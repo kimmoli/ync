@@ -53,6 +53,11 @@ Page
                                               "name": "YNC",
                                               "imagelocation": "/usr/share/icons/hicolor/86x86/apps/harbour-ync.png"} )
             }
+            MenuItem
+            {
+                text: powerOn ? "Standby" : "Power on"
+                onClicked: powerStandby(text)
+            }
         }
 
         contentHeight: column.height
@@ -185,13 +190,6 @@ Page
                     "<Main_Zone><Volume><Mute>On/Off</Mute></Volume></Main_Zone></YAMAHA_AV>")
             }
 
-            Button
-            {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: powerOn ? "Standby" : "On"
-                onClicked: powerStandby(text)
-            }
-
             Label
             {
                 visible: false
@@ -208,6 +206,7 @@ Page
             ComboBox
             {
                 id: inputSelector
+                enabled: powerOn
                 width: page.width
                 label: "Input "
                 description: "change input"
