@@ -5,6 +5,7 @@
 #include "ync.h"
 #include <QXmlQuery>
 #include <QXmlResultItems>
+#include <QBuffer>
 
 YNC::YNC(QObject *parent) :
     QObject(parent)
@@ -12,7 +13,7 @@ YNC::YNC(QObject *parent) :
     emit versionChanged();
 
     m_deviceInfo = QVariantMap();
-    m_deviceInfo.insert("friendlyName", "Not connected");
+    m_deviceInfo.insert("friendlyName", "Searching...");
 
     m_baseUrl = QString();
 
@@ -72,6 +73,8 @@ void YNC::getDeviceInfo(QString url)
     qDebug() << m_iconUrl;
 
     emit iconUrlChanged();
+
+    getDeviceStatus();
 }
 
 
@@ -106,7 +109,70 @@ void YNC::postFinish(QNetworkReply *reply)
     {
         qDebug() << "error:" << reply->errorString();
     }
+
+    getDeviceStatus();
 }
+
+void YNC::getDeviceStatus()
+{
+    if (m_baseUrl.isEmpty())
+        return;
+
+    QString data("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"GET\"><Main_Zone><Basic_Status>GetParam</Basic_Status></Main_Zone></YAMAHA_AV>");
+
+    QNetworkAccessManager * _mgr = new QNetworkAccessManager(this);
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), this, SLOT(getDeviceStatusFinish(QNetworkReply*)));
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), _mgr, SLOT(deleteLater()));
+
+    QUrl url(m_baseUrl + "/YamahaRemoteControl/ctrl");
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "text/xml");
+
+    qDebug() << "posting..." << url << data;
+
+    _mgr->post(request, data.toLatin1());
+}
+
+void YNC::getDeviceStatusFinish(QNetworkReply *reply)
+{
+    QString strReply;
+
+    if(reply->error() == QNetworkReply::NoError)
+    {
+        strReply = (QString)reply->readAll();
+    }
+    else
+    {
+        qDebug() << "Network error:" << reply->errorString();
+        return;
+    }
+
+    QBuffer device;
+    device.setData(strReply.toUtf8());
+    device.open(QIODevice::ReadOnly);
+
+    QXmlQuery query;
+    query.bindVariable("reply", &device);
+
+    m_deviceStatus.clear();
+
+    QStringList lookFor;
+    lookFor << "Power_Control/Power";
+    lookFor << "Volume/Lvl/Val";
+
+    foreach (const QString looking, lookFor)
+    {
+        query.setQuery(QString("doc($reply)/YAMAHA_AV/Main_Zone/Basic_Status/%1/string()").arg(looking));
+        QString tmp;
+        query.evaluateTo(&tmp);
+
+        qDebug() << looking << tmp.trimmed();
+        m_deviceStatus.insert(looking, tmp.trimmed());
+    }
+
+    emit deviceStatusChanged();
+}
+
 
 void YNC::startDiscovery()
 {
@@ -135,5 +201,11 @@ void YNC::deviceDiscovered(const QString &result)
 void YNC::deviceDiscoveryTimeout()
 {
     qDebug() << "timeout";
+
+    if (m_deviceInfo.value("friendlyName") == "Searching...")
+    {
+        m_deviceInfo.clear();
+        m_deviceInfo.insert("friendlyName", "Nothing found.");
+    }
 }
 

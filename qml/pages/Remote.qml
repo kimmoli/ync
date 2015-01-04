@@ -10,13 +10,21 @@ Page
     id: page
     RemorsePopup { id: remorse }
 
-    function powerStandby()
+    function powerStandby(text)
     {
-        remorse.execute("Shutting down", function()
-            {
+        if (text === "Standby")
+        {
+            remorse.execute("Shutting down", function()
+                {
+                ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
+                                    "<Main_Zone><Power_Control><Power>Standby</Power></Power_Control></Main_Zone></YAMAHA_AV>")
+                } )
+        }
+        else
+        {
             ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\">" +
-                                "<Main_Zone><Power_Control><Power>Standby</Power></Power_Control></Main_Zone></YAMAHA_AV>")
-            } )
+                                "<Main_Zone><Power_Control><Power>On</Power></Power_Control></Main_Zone></YAMAHA_AV>")
+        }
     }
 
     SilicaFlickable
@@ -65,6 +73,21 @@ Page
                         anchors.fill: parent
                         onClicked: pageStack.push(Qt.resolvedUrl("AboutDevice.qml"))
                     }
+                    ProgressCircle
+                    {
+                        id: progressCircle
+                        anchors.fill: parent
+                        visible: deviceLabel.text === "Searching..."
+
+                        Timer
+                        {
+                            interval: 32
+                            repeat: true
+                            onTriggered: progressCircle.value = (progressCircle.value + 0.005) % 1.0
+                            running: parent.visible
+                        }
+
+                    }
                 }
 
                 Label
@@ -77,6 +100,12 @@ Page
                 }
 
             }
+            Label
+            {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Volume " + ync.deviceStatus["Volume/Lvl/Val"]
+            }
+
             Button
             {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -102,8 +131,8 @@ Page
             Button
             {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Standby"
-                onClicked: powerStandby()
+                text: ync.deviceStatus["Power_Control/Power"] === "Standby" ? "On" : "Standby"
+                onClicked: powerStandby(text)
             }
 
         }
