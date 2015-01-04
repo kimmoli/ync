@@ -180,7 +180,12 @@ Page
 
             Row
             {
-                visible: ync.deviceInputs[ync.currentInput]["inputName"] === "TUNER"
+                visible: ync.deviceInputs[inputSelector.currentIndex]["inputName"] === "TUNER"
+                onVisibleChanged: if (visible)
+                                  {
+                                      tunerRepeater = 5
+                                      checkTunerStatusTimer.start()
+                                  }
                 width: parent.width - Theme.paddingLarge
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 0
