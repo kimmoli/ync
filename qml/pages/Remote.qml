@@ -76,7 +76,7 @@ Page
                 {
                     id: deviceLogo
                     anchors.verticalCenter: parent.verticalCenter
-                    source: ync.iconUrl
+                    source: ync.deviceInfo["IconUrl"]
                     width: 120
                     height: 120
                     MouseArea
@@ -191,6 +191,45 @@ Page
                 text: powerOn ? "Standby" : "On"
                 onClicked: powerStandby(text)
             }
+
+            Label
+            {
+                visible: false
+                text: "Input: <b>" + ync.deviceStatus["Input/Input_Sel_Item_Info/Param"] + "</b>" + ync.currentInput
+                anchors.horizontalCenter: parent.horizontalCenter
+                font.pixelSize: Theme.fontSizeLarge
+                opacity: powerOn ? 1.0 : 0.4
+                horizontalAlignment: Text.AlignHCenter
+                /* WTF ! combobox does not see if currentIndex var changes, i need to trigger it here ?? */
+                onTextChanged: inputSelector.currentIndex = ync.currentInput
+            }
+
+
+            ComboBox
+            {
+                id: inputSelector
+                width: page.width
+                label: "Input "
+                description: "change input"
+                currentIndex: ync.currentInput
+                menu: ContextMenu {
+                    Repeater {
+                        model: ync.deviceInputs
+                        MenuItem {
+                            text: ync.deviceInputs[index]["inputTitle"] + "(" + ync.deviceInputs[index]["inputName"] + ")"
+                            onClicked: ync.postThis("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"PUT\"><Main_Zone><Input><Input_Sel>" + ync.deviceInputs[index]["inputName"] + "</Input_Sel></Input></Main_Zone></YAMAHA_AV>")
+                        }
+                    }
+                }
+            }
+
+            //  Seems these are not available from receiver (?)
+            //            Image
+            //            {
+            //                source: ync.deviceInfo["BaseUrl"] + ync.deviceStatus["Input/Input_Sel_Item_Info/Icon/On"]
+            //                onSourceChanged: console.log(source)
+            //            }
+
 
         }
     }

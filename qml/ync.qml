@@ -15,6 +15,7 @@ ApplicationWindow
 
     property real volumeValue: -350
     property bool powerOn: false
+    property int currentInput: 0
 
     initialPage: Qt.resolvedUrl("pages/Remote.qml")
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
@@ -40,6 +41,15 @@ ApplicationWindow
             volumeValue = ync.deviceStatus["Volume/Lvl/Val"]
             powerOn = ync.deviceStatus["Power_Control/Power"] === "On"
         }
+
+        onDeviceInputsChanged:
+        {
+            for (var i=0 ; i<ync.deviceInputs.length ; i++)
+                inputNames.append( { "inputName": ync.deviceInputs[i]["inputName"] } )
+        }
+
+        onCurrentInputChanged:
+            console.log("input changed to " + ync.currentInput)
     }
 
     onPowerOnChanged:
@@ -55,6 +65,11 @@ ApplicationWindow
         repeat: true
         running: false
         onTriggered: ync.getDeviceStatus()
+    }
+
+    ListModel
+    {
+        id: inputNames
     }
 
 }

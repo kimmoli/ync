@@ -16,6 +16,7 @@ YNC::YNC(QObject *parent) :
     m_deviceInfo.insert("friendlyName", "Searching...");
 
     m_baseUrl = QString();
+    m_currentInput = -1;
 
     emit deviceInfoChanged();
 }
@@ -49,6 +50,8 @@ void YNC::getDeviceInfo(QString url)
 
     m_deviceInfo.clear();
 
+    m_deviceInfo.insert("BaseUrl", m_baseUrl);
+
     foreach (const QString &looking, lookFor)
     {
         query.setQuery(queryTemplate.arg(looking));
@@ -58,10 +61,6 @@ void YNC::getDeviceInfo(QString url)
         m_deviceInfo.insert(looking, value);
     }
 
-    qDebug() << m_deviceInfo;
-
-    emit deviceInfoChanged();
-
     queryTemplate = "declare default element namespace \"urn:schemas-upnp-org:device-1-0\"; /root/device/iconList/icon/%1/string()";
     query.setQuery(queryTemplate.arg("url"));
     QStringList iconUrls;
@@ -69,12 +68,12 @@ void YNC::getDeviceInfo(QString url)
     qDebug() << iconUrls;
 
     // just take last one
-    m_iconUrl = QString("http://%1:%2%3").arg(QUrl(url).host()).arg(QUrl(url).port(80)).arg(iconUrls.last());
-    qDebug() << m_iconUrl;
+    m_deviceInfo.insert("IconUrl", QString("http://%1:%2%3").arg(QUrl(url).host()).arg(QUrl(url).port(80)).arg(iconUrls.last()));
 
-    emit iconUrlChanged();
+    qDebug() << m_deviceInfo;
+    emit deviceInfoChanged();
 
-    getDeviceStatus();
+    getDeviceInputs();
 }
 
 
@@ -160,6 +159,9 @@ void YNC::getDeviceStatusFinish(QNetworkReply *reply)
     lookFor << "Power_Control/Power";
     lookFor << "Volume/Lvl/Val";
     lookFor << "Volume/Mute";
+    lookFor << "Input/Input_Sel_Item_Info/Title";
+    lookFor << "Input/Input_Sel_Item_Info/Param";
+    lookFor << "Input/Input_Sel_Item_Info/Icon/On";
 
     foreach (const QString looking, lookFor)
     {
@@ -171,9 +173,94 @@ void YNC::getDeviceStatusFinish(QNetworkReply *reply)
         m_deviceStatus.insert(looking, tmp.trimmed());
     }
 
+    for (int i=0 ; i<m_deviceInputs.count() ; i++)
+    {
+        QVariantMap m = m_deviceInputs.at(i).toMap();
+        qDebug() << m_deviceStatus.value("Input/Input_Sel_Item_Info/Param") << m.value("inputName").toString();
+
+        if (m_deviceStatus.value("Input/Input_Sel_Item_Info/Param") == m.value("inputName").toString())
+        {
+            m_currentInput = i;
+            qDebug() << "input changed to" << m_currentInput;
+            emit currentInputChanged();
+            break;
+        }
+    }
+
+
     emit deviceStatusChanged();
 }
 
+void YNC::getDeviceInputs()
+{
+    if (m_baseUrl.isEmpty())
+        return;
+
+    QString data("<?xml version=\"1.0\" encoding=\"utf-8\"?><YAMAHA_AV cmd=\"GET\"><Main_Zone><Input><Input_Sel_Item>GetParam</Input_Sel_Item></Input></Main_Zone></YAMAHA_AV>");
+
+    QNetworkAccessManager * _mgr = new QNetworkAccessManager(this);
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), this, SLOT(getDeviceInputsFinish(QNetworkReply*)));
+    connect(_mgr, SIGNAL(finished(QNetworkReply*)), _mgr, SLOT(deleteLater()));
+
+    QUrl url(m_baseUrl + "/YamahaRemoteControl/ctrl");
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "text/xml");
+
+    qDebug() << "posting..." << url << data;
+
+    _mgr->post(request, data.toLatin1());
+
+}
+
+void YNC::getDeviceInputsFinish(QNetworkReply *reply)
+{
+    QString strReply;
+    QVariantList list;
+    QVariantMap map;
+
+    if(reply->error() == QNetworkReply::NoError)
+    {
+        strReply = (QString)reply->readAll();
+    }
+    else
+    {
+        qDebug() << "Network error:" << reply->errorString();
+        return;
+    }
+
+    QBuffer device;
+    device.setData(strReply.toUtf8());
+    device.open(QIODevice::ReadOnly);
+
+    QXmlQuery query;
+    query.bindVariable("reply", &device);
+
+    m_deviceInputs.clear();
+
+    query.setQuery(QString("doc($reply)/YAMAHA_AV/Main_Zone/Input/Input_Sel_Item/*/Param/string()"));
+    QStringList tmpParam;
+    query.evaluateTo(&tmpParam);
+
+    query.setQuery(QString("doc($reply)/YAMAHA_AV/Main_Zone/Input/Input_Sel_Item/*/Title/string()"));
+    QStringList tmpTitle;
+    query.evaluateTo(&tmpTitle);
+
+
+    for (int i=0 ; i<tmpParam.count() ; i++)
+    {
+        map.clear();
+        map.insert("inputName", tmpParam.at(i));
+        map.insert("inputTitle", tmpTitle.at(i));
+        list.append(map);
+    }
+
+    m_deviceInputs = list;
+
+
+    emit deviceInputsChanged();
+
+    getDeviceStatus();
+}
 
 void YNC::startDiscovery()
 {
